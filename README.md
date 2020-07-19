@@ -15,6 +15,13 @@ Small demo of mesh animation in JS
 - `T` = toggle triangles
 - `P` = toggle points
 
+### Color
+
+- `C` = toggle gradient coloring
+- `R` = toggle red chanel
+- `G` = toggle green chanel
+- `B` = toggle blue chanel
+
 ### Animation:
 
 - `A` = toggle animation

@@ -1,11 +1,11 @@
 window.onload = init;
 
-const rMin = 0;
-const rMax = 0;
-const gMin = 100;
-const gMax = 200;
-const bMin = 100;
-const bMax = 200;
+var rMin = 0;
+var rMax = 255;
+var gMin = 0;
+var gMax = 255;
+var bMin = 0;
+var bMax = 255;
 
 var SCREEN_WIDTH = 900;
 var SCREEN_HEIGHT = 600;
@@ -16,6 +16,8 @@ const RADIUS_SCALE_MIN = 1;
 const RADIUS_SCALE_MAX = 1.05;
 
 const NEW_POINTS_MULT = 0.05;
+
+const FALLBACK_COLOR = '#ffffff';
 
 const FRAMES_TO_RECALC = 1;
 
@@ -42,6 +44,7 @@ var drawPoints = true;
 var trailIntensity = 0.1;
 var delaunay;
 var delaunayFrameCounter = 0;
+var gradientColor = true;
 
 function init(){
     canvas = document.getElementById('main');
@@ -90,10 +93,12 @@ function createPoints() {
 }
 
 function createNewRandomPoint(){
+    var x = Math.random() * SCREEN_WIDTH;
+    var y = Math.random() * SCREEN_HEIGHT;
     return createNewPointByCoords(
-        Math.random() * SCREEN_WIDTH, 
-        Math.random() * SCREEN_HEIGHT,
-        getSequentialColor(Math.random(), 1)
+        x, 
+        y,
+        getColor(x, y)
     );
 }
 
@@ -105,7 +110,7 @@ function createNewPointByCoords(x, y, color, size = RADIUS){
     var point = {
         position: { x: x, y: y },
         size: size * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),            
-        fillColor: color,
+        color: color,
         linesTo: [],
         selected: false,
         speed: pointSpeed    
@@ -113,39 +118,82 @@ function createNewPointByCoords(x, y, color, size = RADIUS){
     return point;
 }
 
-function toColorHex(digit){
-    if (digit < 16){
-        return '0' + digit.toString(16);
+function toColorHex(digit, len = 2){
+    var ret = digit.toString(16);
+    while (ret.length < len){
+        ret = '0' + ret;
     }
-    return digit.toString(16);
+    return ret;
 }
 
-function getSequentialColor(idx, maxIdx){
-    let r = ((idx / maxIdx) * (rMax - rMin) + rMin) | 0;
-    let g = ((idx / maxIdx) * (gMax - gMin) + gMin) | 0;
-    let b = ((idx / maxIdx) * (bMax - bMin) + bMin) | 0;
+function gerRandomColor(){
+    let rDist = rMax - rMin;
+    let gDist = gMax - gMin;
+    let bDist = bMax - bMin;
+
+    if (rDist == 0 && gDist == 0 && bDist == 0){
+        return FALLBACK_COLOR;
+    }
+    else {
+        let r = (Math.random() * rDist + rMin) | 0;
+        let g = (Math.random() * gDist + gMin) | 0;
+        let b = (Math.random() * bDist + bMin) | 0;
+        return '#' + toColorHex(r) + toColorHex(g) + toColorHex(b);
+    }
+}
+
+function getDistanceColor(x, xMax, y, yMax){
+
+    
+    if (rMax == 0 && gMax == 0 && bMax == 0){
+        return FALLBACK_COLOR;
+    }
+
+    var mX = xMax / 2;
+    var xDist = Math.abs(x - mX);
+    var xPart = xDist / mX;
+
+    var mY = yMax / 2;
+    var yDist = Math.abs(y - mY);
+    var yPart = yDist / mY;
+    let r = (Math.sqrt((xPart * xPart - yPart * yPart)) * (rMax - rMin) + rMin) | 0;
+    let g = ((1 - xPart) * (gMax - gMin) + gMin) | 0;
+    let b = ((yPart) * (bMax - bMin) + bMin) | 0;
+
+
     let ret = '#' + toColorHex(r) + toColorHex(g) + toColorHex(b);
 
     return ret;
 }
 
+function getColor(x, y) {
+    if (gradientColor){
+        return getDistanceColor(x, SCREEN_WIDTH, y, SCREEN_HEIGHT);
+    }
+    else {
+        return gerRandomColor();
+    }
+}
+
+function updatePointColor(point){
+    point.color = getColor(point.position.x, point.position.y);
+}
+
 function createBorderPoints(pointsOnSide){
-    let borderPoints = [];
-    let numberOfBorderPoints = pointsOnSide * 2 + (pointsOnSide - 2) * 2
-    var pIdx = 0;
+    let newBorderPoints = [];
     for(let i = 0; i < pointsOnSide; i++){
         var x = (SCREEN_WIDTH / (pointsOnSide - 1)) * i;
-        borderPoints.push(createNewPointByCoords(x, 0, getSequentialColor(pIdx++, numberOfBorderPoints)));
-        borderPoints.push(createNewPointByCoords(x, SCREEN_HEIGHT, getSequentialColor(pIdx++, numberOfBorderPoints)));
+        newBorderPoints.push(createNewPointByCoords(x, 0, getColor(x, 0)));
+        newBorderPoints.push(createNewPointByCoords(x, SCREEN_HEIGHT, getColor(x, SCREEN_HEIGHT)));
     }
     
     for(let i = 1; i < (pointsOnSide - 1); i++){
         var y = (SCREEN_HEIGHT / (pointsOnSide - 1)) * i;
-        borderPoints.push(createNewPointByCoords(0, y, getSequentialColor(pIdx++, numberOfBorderPoints)));
-        borderPoints.push(createNewPointByCoords(SCREEN_WIDTH, y, getSequentialColor(pIdx++, numberOfBorderPoints)));
+        newBorderPoints.push(createNewPointByCoords(0, y, getColor(0, y)));
+        newBorderPoints.push(createNewPointByCoords(SCREEN_WIDTH, y, getColor(SCREEN_WIDTH, y)));
     }
 
-    return borderPoints;
+    return newBorderPoints;
 }
 
 function createNewSinglePoint(){
@@ -182,6 +230,13 @@ function adjustSpeed(multiplier){
     }
 }
 
+function updateAllPointsColor(){
+    for (let i = 0, len = points.length; i < len; i++) {
+        var point = points[i];
+        point.color = getColor(point.position.x, point.position.y);
+    }
+}
+
 function getDistance(x0, x1, y0, y1, r){
     return Math.sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
 }
@@ -195,14 +250,14 @@ function loop() {
     handlePointsFrame();
 }
 
-function updateBorderPoints() {
+function updateBorderPoints(force = false) {
     var targetSidePoints = (Math.sqrt(points.length) / 2) | 0;
     if (targetSidePoints < 4){
         targetSidePoints = 4;
     }
     var numberOfBorderPoints = targetSidePoints * 2 + (targetSidePoints - 2) * 2;
 
-    if (numberOfBorderPoints != borderPoints.length) {
+    if (force || numberOfBorderPoints != borderPoints.length) {
         borderPoints = createBorderPoints(targetSidePoints);
     }
 }
@@ -249,15 +304,15 @@ function drawTriangle(idx, points){
 
     if (drawEdgeLines) {
         // the outline
-        context.fillStyle = selected ? selectionColor : point1.fillColor;
-        context.strokeStyle = selected ? selectionColor : point1.fillColor;
+        context.fillStyle = selected ? selectionColor : point1.color;
+        context.strokeStyle = selected ? selectionColor : point1.color;
         context.lineWidth = selected ? point1.size / 3 : point1.size / 10;
         context.stroke();
     }
 
     // the fill color
     if (drawTriangles) {
-        context.fillStyle = point1.fillColor;
+        context.fillStyle = point1.color;
         context.fill();
     }
 }
@@ -319,16 +374,20 @@ function handlePointsFrame(){
         else if (point.position.y > SCREEN_HEIGHT) {
             point.position.y = SCREEN_HEIGHT;
         }
+
         if (drawPoints){
             drawPoint(point);
+        }
+        if (gradientColor) {
+            updatePointColor(point);
         }
     }
 }
 
 function drawPoint(point){        
     context.beginPath();
-    context.fillStyle = point.selected ? selectionColor : point.fillColor;
-    context.strokeStyle = point.selected ? selectionColor : point.fillColor;
+    context.fillStyle = point.selected ? selectionColor : point.color;
+    context.strokeStyle = point.selected ? selectionColor : point.color;
     context.lineWidth = point.size;
     context.moveTo(point.position.x, point.position.y);
     context.lineTo(point.position.x, point.position.y);
@@ -398,6 +457,26 @@ function keyPressHandler(e){
             break;
         case 'KeyP':
             drawPoints = !drawPoints;
+            break;
+        case 'KeyC':
+            gradientColor = !gradientColor;
+            updateBorderPoints(true);
+            updateAllPointsColor();
+            break;
+        case 'KeyR':
+            rMax = rMax == 0 ? 255 : 0;
+            updateBorderPoints(true);
+            updateAllPointsColor();
+            break;
+        case 'KeyG':
+            gMax = gMax == 0 ? 255 : 0;
+            updateBorderPoints(true);
+            updateAllPointsColor();
+            break;
+        case 'KeyB':
+            bMax = bMax == 0 ? 255 : 0;
+            updateBorderPoints(true);
+            updateAllPointsColor();
             break;
         case 'BracketRight':
             trailIntensity *= 1.1;
