@@ -17,7 +17,7 @@ const RADIUS_SCALE_MAX = 1.05;
 
 const NEW_POINTS_MULT = 0.05;
 
-const FRAMES_TO_RECALC = 4;
+const FRAMES_TO_RECALC = 1;
 
 // The number of circles
 const QUANTITY = 2500;
@@ -63,7 +63,7 @@ function init(){
         setInterval( loop, 1000 / 30 );
     }
 
-    borderPoints = createBorderPoints();
+    updateBorderPoints();
 }
 
 document.oncontextmenu = function (e) {
@@ -99,12 +99,12 @@ function createNewRandomPoint(){
 
 function getRandomInZeroOne() { return (-1 + 2 * Math.random()); }
 
-function createNewPointByCoords(x, y, color){
+function createNewPointByCoords(x, y, color, size = RADIUS){
     var pointSpeed = {dx : getRandomInZeroOne() * baseSpeed, dy: getRandomInZeroOne() * baseSpeed};
 
     var point = {
         position: { x: x, y: y },
-        size: RADIUS * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),            
+        size: size * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),            
         fillColor: color,
         linesTo: [],
         selected: false,
@@ -129,18 +129,18 @@ function getSequentialColor(idx, maxIdx){
     return ret;
 }
 
-function createBorderPoints(){
-    const numberOfBorderPoints = 12;
+function createBorderPoints(pointsOnSide){
     let borderPoints = [];
+    let numberOfBorderPoints = pointsOnSide * 2 + (pointsOnSide - 2) * 2
     var pIdx = 0;
-    for(let i = 0; i < 4; i++){
-        var x = (SCREEN_WIDTH / 3) * i;
+    for(let i = 0; i < pointsOnSide; i++){
+        var x = (SCREEN_WIDTH / (pointsOnSide - 1)) * i;
         borderPoints.push(createNewPointByCoords(x, 0, getSequentialColor(pIdx++, numberOfBorderPoints)));
         borderPoints.push(createNewPointByCoords(x, SCREEN_HEIGHT, getSequentialColor(pIdx++, numberOfBorderPoints)));
     }
     
-    for(let i = 1; i < 3; i++){
-        var y = (SCREEN_HEIGHT / 3) * i;
+    for(let i = 1; i < (pointsOnSide - 1); i++){
+        var y = (SCREEN_HEIGHT / (pointsOnSide - 1)) * i;
         borderPoints.push(createNewPointByCoords(0, y, getSequentialColor(pIdx++, numberOfBorderPoints)));
         borderPoints.push(createNewPointByCoords(SCREEN_WIDTH, y, getSequentialColor(pIdx++, numberOfBorderPoints)));
     }
@@ -190,8 +190,21 @@ function loop() {
     // Fade out the lines slowly by drawing a rectangle over the entire canvas
     context.fillStyle = 'rgba(0,0,0,' + trailIntensity + ')';
     context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+    updateBorderPoints();
     drawMesh();
     handlePointsFrame();
+}
+
+function updateBorderPoints() {
+    var targetSidePoints = (Math.sqrt(points.length) / 2) | 0;
+    if (targetSidePoints < 4){
+        targetSidePoints = 4;
+    }
+    var numberOfBorderPoints = targetSidePoints * 2 + (targetSidePoints - 2) * 2;
+
+    if (numberOfBorderPoints != borderPoints.length) {
+        borderPoints = createBorderPoints(targetSidePoints);
+    }
 }
 
 function nextHalfedge(e) { return (e % 3 === 2) ? e - 2 : e + 1; }
