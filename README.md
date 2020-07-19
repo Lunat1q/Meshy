@@ -1,6 +1,7 @@
 # Meshy
 Small demo of mesh animation in JS
 
+[Demo](https://lunat1q.github.io/Meshy/)
 
 ## Hotkeys
 
