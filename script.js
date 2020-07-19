@@ -1,24 +1,3 @@
-/*
----Hotkeys---
-
-General:
-Spacebar = add new point
-Enter = pop point
-
-Rendering settings:
-L = toggle lines
-T = toggle triangles
-P = toggle points
-
-Animation:
-A = toggle animation
-{ (Left bracket) = increase trail time animation
-} (Left bracket) = decrease trail time animation
-+ = increase points speed
-- = decrease points speed
-
-*/
-
 window.onload = init;
 
 const rMin = 0;
@@ -36,12 +15,17 @@ const RADIUS = 5;
 const RADIUS_SCALE_MIN = 1;
 const RADIUS_SCALE_MAX = 1.05;
 
+const NEW_POINTS_MULT = 0.05;
+
+const FRAMES_TO_RECALC = 4;
+
 // The number of circles
 const QUANTITY = 2500;
 
 var canvas;
 var context;
 var points;
+var borderPoints;
 
 var mouseX = (window.innerWidth - SCREEN_WIDTH);
 var mouseY = (window.innerHeight - SCREEN_HEIGHT);
@@ -56,6 +40,8 @@ var drawTriangles = false;
 var drawEdgeLines = true;
 var drawPoints = true;
 var trailIntensity = 0.1;
+var delaunay;
+var delaunayFrameCounter = 0;
 
 function init(){
     canvas = document.getElementById('main');
@@ -76,6 +62,8 @@ function init(){
         
         setInterval( loop, 1000 / 30 );
     }
+
+    borderPoints = createBorderPoints();
 }
 
 document.oncontextmenu = function (e) {
@@ -97,7 +85,7 @@ function createPoints() {
     points = [];
     
     for (var i = 0; i < QUANTITY; i++) {
-        addNewPoint();
+        createNewSinglePoint();
     }
 }
 
@@ -160,9 +148,30 @@ function createBorderPoints(){
     return borderPoints;
 }
 
-function addNewPoint(){
+function createNewSinglePoint(){
     var point = createNewRandomPoint();        
-    points.push( point );
+    points.push(point);
+}
+
+function addNewPoints(){
+    var numberOfNewPoints = points.length * NEW_POINTS_MULT;
+    if (numberOfNewPoints < 1) numberOfNewPoints = 1;
+
+    for(let i = 0; i < numberOfNewPoints; i++)
+    {
+        createNewSinglePoint();
+    }
+}
+
+function popPoints()
+{
+    var numberOfPoints = points.length * NEW_POINTS_MULT;
+    if (numberOfPoints < 1) numberOfPoints = 1;
+
+    for(let i = 0; i < numberOfPoints; i++)
+    {
+        points.pop();
+    }
 }
 
 function adjustSpeed(multiplier){
@@ -197,9 +206,14 @@ function pointsOfTriangle(delaunay, t) {
 }
 
 function drawMesh(){
-    let allPoints = createBorderPoints().concat(points);
-    //let allPoints = points;
-    let delaunay = Delaunator.from(allPoints);
+    let allPoints = borderPoints.concat(points);
+    
+    if (delaunayFrameCounter++ == 0){
+        delaunay = Delaunator.from(allPoints);
+    }
+    if (delaunayFrameCounter >= FRAMES_TO_RECALC){
+        delaunayFrameCounter = 0;
+    }
 
     for (let t = 0; t < delaunay.triangles.length / 3; t++) {
         drawTriangle(t, pointsOfTriangle(delaunay, t).map(p => allPoints[p]));
@@ -224,7 +238,7 @@ function drawTriangle(idx, points){
         // the outline
         context.fillStyle = selected ? selectionColor : point1.fillColor;
         context.strokeStyle = selected ? selectionColor : point1.fillColor;
-        context.lineWidth = selected ? point1.size : point1.size / 10;
+        context.lineWidth = selected ? point1.size / 3 : point1.size / 10;
         context.stroke();
     }
 
@@ -337,15 +351,17 @@ function windowResizeHandler() {
     canvas.style.position = 'absolute';
     canvas.style.left = (window.innerWidth - SCREEN_WIDTH) * .5 + 'px';
     canvas.style.top = (window.innerHeight - SCREEN_HEIGHT) * .5 + 'px';
+    
+    borderPoints = createBorderPoints();
 }
 
 function keyPressHandler(e){
     if(e.keyCode == 32){
-        addNewPoint();
+        addNewPoints();
         return;
     }
     else if (e.keyCode == 13){
-        points.pop();
+        popPoints();
         return;
     }
 
