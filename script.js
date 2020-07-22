@@ -192,7 +192,7 @@ function handleColorAnimation() {
         case modes.RANDOM:
             break;
         case modes.CIRCLES:
-            if (frameCount >= 5){
+            if (frameCount >= 3){
                 if (circlesUp){
                     circlesCount+=0.1;
                 }
@@ -216,44 +216,42 @@ function handleColorAnimation() {
             if (hitRange){
                 centerMoveX = Math.random() > 0.5;
                 centerMoveY = Math.random() > 0.5;
-                if (centerMoveX){
-                    centerMoveXUp = Math.random() > 0.5;
+                if (centerMoveX && Math.random() > 0.8){
+                    centerMoveXUp = !centerMoveXUp;
                 }
-                if (centerMoveY){
-                    centerMoveYUp = Math.random() > 0.5;
+                if (centerMoveY && Math.random() > 0.8){
+                    centerMoveYUp = !centerMoveYUp;
                 }
             }
-            const COLOR_MULT = 1.001;
+            const COLOR_MULT = 1.0004;
 
-            if (circlesCount % 0.3 < 0.11){
-                if (centerMoveX){
-                    if (centerMoveXUp){ 
-                        centerPositionX *= COLOR_MULT;
-                    }
-                    else {
-                        centerPositionX /= COLOR_MULT;
-                    }
-                    if (centerPositionX > 20){
-                        centerMoveXUp = false;
-                    }
-                    else if (centerPositionX < 1.1){
-                        centerMoveXUp = true;
-                    }
+            if (centerMoveX){
+                if (centerMoveXUp){ 
+                    centerPositionX *= COLOR_MULT;
                 }
-                if (centerMoveY){
-                    if (centerMoveYUp){ 
-                        cetnerPositionY *= COLOR_MULT;
-                    }
-                    else {
-                        cetnerPositionY /= COLOR_MULT;
-                    }
+                else {
+                    centerPositionX /= COLOR_MULT;
+                }
+                if (centerPositionX > 20){
+                    centerMoveXUp = false;
+                }
+                else if (centerPositionX < 1.1){
+                    centerMoveXUp = true;
+                }
+            }
+            if (centerMoveY){
+                if (centerMoveYUp){ 
+                    cetnerPositionY *= COLOR_MULT;
+                }
+                else {
+                    cetnerPositionY /= COLOR_MULT;
+                }
 
-                    if (cetnerPositionY > 20){
-                        centerMoveYUp = false;
-                    }
-                    else if (cetnerPositionY < 1.1){
-                        centerMoveYUp = true;
-                    }
+                if (cetnerPositionY > 20){
+                    centerMoveYUp = false;
+                }
+                else if (cetnerPositionY < 1.1){
+                    centerMoveYUp = true;
                 }
             }
         
