@@ -8,6 +8,7 @@ Small demo of mesh animation in JS
 ### General
 - `Spacebar` = add new point
 - `Enter` = pop point
+- `Right-click` = toggle help
 
 ### Rendering settings
 
@@ -17,10 +18,15 @@ Small demo of mesh animation in JS
 
 ### Color
 
-- `C` = toggle gradient coloring
 - `R` = toggle red chanel
 - `G` = toggle green chanel
 - `B` = toggle blue chanel
+
+#### Color modes
+
+- `1` = gradient colors
+- `2` = random colors
+- `3` = gradient animated circles
 
 ### Animation:
 

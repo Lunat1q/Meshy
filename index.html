@@ -1,12 +1,57 @@
 <html>
+
 <head>
     <script src="delunator.js"></script>
     <script src="script.js"></script>
+    <style>
+        code {
+            background-color: powderblue;
+            padding: 0px 5px;
+        }
+    </style>
 </head>
 
 <body>
     <div>
-        <canvas id="main"></canvas>
+        <canvas id="main" style="position:absolute"></canvas>
+        <div id="help"
+            style="background-color: rgba(255, 250, 250, 0.9); color:slategray; z-index: 9999999; position:absolute; border-radius: 5px; display: none;">
+            <article style="padding:10px;">
+                <h3>
+                    <center>Hotkeys help</center>
+                </h3>
+                <h4>General</h4>
+                <ul>
+                    <li><code>Spacebar</code> = add new point</li>
+                    <li><code>Enter</code> = pop point</li>
+                    <li><code>Rendering</code> settings</li>
+                    <li><code>L</code> = toggle lines</li>
+                    <li><code>T</code> = toggle triangles</li>
+                    <li><code>P</code> = toggle points</li>
+                </ul>
+                <h4>Color</h4>
+                <ul>
+                    <li><code>C</code> = toggle gradient coloring</li>
+                    <li><code>R</code> = toggle red chanel</li>
+                    <li><code>G</code> = toggle green chanel</li>
+                    <li><code>B</code> = toggle blue chanel</li>
+                </ul>
+                <h4>Color modes</h4>
+                <ul>
+                    <li><code>1</code> = gradient colors</li>
+                    <li><code>2</code> = random colors</li>
+                    <li><code>3</code> = gradient animated circles</li>
+                </ul>
+                <h4>Animation:</h4>
+                <ul>
+                    <li><code>A</code> = toggle animation</li>
+                    <li><code>{</code> (Left bracket) = increase trail time animation</li>
+                    <li><code>}</code> (Left bracket) = decrease trail time animation</li>
+                    <li><code>+</code> = increase points speed</li>
+                    <li><code>-</code> = decrease points speed</li>
+                </ul>
+            </article>
+        </div>
     </div>
 </body>
 

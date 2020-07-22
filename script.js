@@ -1,14 +1,14 @@
 window.onload = init;
 
-var rMin = 0;
-var rMax = 255;
-var gMin = 0;
-var gMax = 255;
-var bMin = 0;
-var bMax = 255;
+let rMin = 0;
+let rMax = 255;
+let gMin = 0;
+let gMax = 255;
+let bMin = 0;
+let bMax = 255;
 
-var SCREEN_WIDTH = 900;
-var SCREEN_HEIGHT = 600;
+let SCREEN_WIDTH = 900;
+let SCREEN_HEIGHT = 600;
 
 const RADIUS = 5;
 
@@ -24,27 +24,33 @@ const FRAMES_TO_RECALC = 1;
 // The number of circles
 const QUANTITY = 2500;
 
-var canvas;
-var context;
-var points;
-var borderPoints;
+const modes = {
+    RANDOM: "random",
+    GRADIENT: "gradient",
+    CIRCLES: "circles"
+}
 
-var mouseX = (window.innerWidth - SCREEN_WIDTH);
-var mouseY = (window.innerHeight - SCREEN_HEIGHT);
-var mouseDownX;
-var mouseDownY;
-var mouseIsDown = false;
-var selectedFound = false;
-var selectionColor = 'rgba(255,255,255,1)';
-var baseSpeed = 0.5;
-var animate = true;
-var drawTriangles = false;
-var drawEdgeLines = true;
-var drawPoints = true;
-var trailIntensity = 0.1;
-var delaunay;
-var delaunayFrameCounter = 0;
-var gradientColor = true;
+let canvas;
+let context;
+let points;
+let borderPoints;
+
+let mouseX = (window.innerWidth - SCREEN_WIDTH);
+let mouseY = (window.innerHeight - SCREEN_HEIGHT);
+let mouseDownX;
+let mouseDownY;
+let mouseIsDown = false;
+let selectedFound = false;
+let selectionColor = 'rgba(255,255,255,1)';
+let baseSpeed = 0.5;
+let animate = true;
+let drawTriangles = false;
+let drawEdgeLines = true;
+let drawPoints = true;
+let trailIntensity = 0.1;
+let delaunay;
+let delaunayFrameCounter = 0;
+let mode = modes.GRADIENT;
 
 function init(){
     canvas = document.getElementById('main');
@@ -70,9 +76,11 @@ function init(){
 }
 
 document.oncontextmenu = function (e) {
-    var evt = new Object({ keyCode: 93 });
+    let evt = new Object({ keyCode: 93 });
     stopEvent(e);
+    toggleHelp();
 }
+
 function stopEvent(event) {
     if (event.preventDefault != undefined)
         event.preventDefault();
@@ -87,14 +95,14 @@ function initBullets(){
 function createPoints() {
     points = [];
     
-    for (var i = 0; i < QUANTITY; i++) {
+    for (let i = 0; i < QUANTITY; i++) {
         createNewSinglePoint();
     }
 }
 
 function createNewRandomPoint(){
-    var x = Math.random() * SCREEN_WIDTH;
-    var y = Math.random() * SCREEN_HEIGHT;
+    let x = Math.random() * SCREEN_WIDTH;
+    let y = Math.random() * SCREEN_HEIGHT;
     return createNewPointByCoords(
         x, 
         y,
@@ -102,12 +110,21 @@ function createNewRandomPoint(){
     );
 }
 
+function toggleHelp() {
+    var x = document.getElementById("help");
+    if (x.style.display === "none") {
+      x.style.display = "block";
+    } else {
+      x.style.display = "none";
+    }
+}
+
 function getRandomInZeroOne() { return (-1 + 2 * Math.random()); }
 
 function createNewPointByCoords(x, y, color, size = RADIUS){
-    var pointSpeed = {dx : getRandomInZeroOne() * baseSpeed, dy: getRandomInZeroOne() * baseSpeed};
+    let pointSpeed = {dx : getRandomInZeroOne() * baseSpeed, dy: getRandomInZeroOne() * baseSpeed};
 
-    var point = {
+    let point = {
         position: { x: x, y: y },
         size: size * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),            
         color: color,
@@ -119,7 +136,7 @@ function createNewPointByCoords(x, y, color, size = RADIUS){
 }
 
 function toColorHex(digit, len = 2){
-    var ret = digit.toString(16);
+    let ret = digit.toString(16);
     while (ret.length < len){
         ret = '0' + ret;
     }
@@ -142,36 +159,165 @@ function gerRandomColor(){
     }
 }
 
-function getDistanceColor(x, xMax, y, yMax){
+function getHexColorFromRgb(r, g, b){ return '#' + toColorHex(r) + toColorHex(g) + toColorHex(b); }
 
-    
+function getGradientColor(x, xMax, y, yMax){
     if (rMax == 0 && gMax == 0 && bMax == 0){
         return FALLBACK_COLOR;
     }
 
-    var mX = xMax / 2;
-    var xDist = Math.abs(x - mX);
-    var xPart = xDist / mX;
+    let mX = xMax / 2;
+    let xDist = Math.abs(x - mX);
+    let xPart = xDist / mX;
 
-    var mY = yMax / 2;
-    var yDist = Math.abs(y - mY);
-    var yPart = yDist / mY;
+    let mY = yMax / 2;
+    let yDist = Math.abs(y - mY);
+    let yPart = yDist / mY;
     let r = (Math.sqrt((xPart * xPart - yPart * yPart)) * (rMax - rMin) + rMin) | 0;
     let g = ((1 - xPart) * (gMax - gMin) + gMin) | 0;
     let b = ((yPart) * (bMax - bMin) + bMin) | 0;
 
+    return getHexColorFromRgb(r, g, b);;
+}
 
-    let ret = '#' + toColorHex(r) + toColorHex(g) + toColorHex(b);
+let frameCount = 0;
+function handleColorAnimation() {
+    if (!animate){
+        return;
+    }
+    frameCount++;
+    switch (mode){
+        case modes.GRADIENT:
+            break;
+        case modes.RANDOM:
+            break;
+        case modes.CIRCLES:
+            if (frameCount >= 5){
+                if (circlesUp){
+                    circlesCount+=0.1;
+                }
+                else
+                {
+                    circlesCount-=0.1;
+                }
+                frameCount = 0;
+            }
 
-    return ret;
+            let hitRange = false;
+            if (circlesUp && circlesCount >= 15){
+                circlesUp = false;
+                hitRange = true;
+            }
+            else if (!circlesUp && circlesCount <= 0.5){
+                circlesUp = true;
+                hitRange = true;
+            }
+
+            if (hitRange){
+                centerMoveX = Math.random() > 0.5;
+                centerMoveY = Math.random() > 0.5;
+                if (centerMoveX){
+                    centerMoveXUp = Math.random() > 0.5;
+                }
+                if (centerMoveY){
+                    centerMoveYUp = Math.random() > 0.5;
+                }
+            }
+            const COLOR_MULT = 1.001;
+
+            if (circlesCount % 0.3 < 0.11){
+                if (centerMoveX){
+                    if (centerMoveXUp){ 
+                        centerPositionX *= COLOR_MULT;
+                    }
+                    else {
+                        centerPositionX /= COLOR_MULT;
+                    }
+                    if (centerPositionX > 20){
+                        centerMoveXUp = false;
+                    }
+                    else if (centerPositionX < 1.1){
+                        centerMoveXUp = true;
+                    }
+                }
+                if (centerMoveY){
+                    if (centerMoveYUp){ 
+                        cetnerPositionY *= COLOR_MULT;
+                    }
+                    else {
+                        cetnerPositionY /= COLOR_MULT;
+                    }
+
+                    if (cetnerPositionY > 20){
+                        centerMoveYUp = false;
+                    }
+                    else if (cetnerPositionY < 1.1){
+                        centerMoveYUp = true;
+                    }
+                }
+            }
+        
+            break;
+    }
+}
+
+let circlesUp = true;
+let circlesCount = 2.0;
+let centerPositionX = 2;
+let cetnerPositionY = 2;
+let centerMoveX = false;
+let centerMoveXUp = false;
+let centerMoveY = false;
+let centerMoveYUp = false;
+
+function getColorForCircle(x, xMax, y, yMax){
+    if (rMax == 0 && gMax == 0 && bMax == 0){
+        return FALLBACK_COLOR;
+    }
+
+    let cX = xMax / centerPositionX;
+    let cY = yMax / cetnerPositionY;
+    let xDist = Math.abs(x - cX);
+    let yDist = Math.abs(y - cY);
+
+    let dist = Math.sqrt(xDist * xDist + yDist * yDist);
+
+    let maxDist = Math.sqrt(cX * cX + cY * cY);
+
+    let circleStep = maxDist / circlesCount;
+
+    var stepDist = (dist % circleStep) / circleStep;
+    var step = ((dist / circleStep) | 0) % 3;
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    switch (step){
+        case 0:
+            g = (1 - stepDist) * (gMax - gMin) + gMin;
+            r = stepDist * (rMax - rMin) + rMin;
+            break;
+        case 1:            
+            r = (1 - stepDist) * (rMax - rMin) + rMin;
+            b = stepDist * (bMax - bMin) + bMin;
+            break;
+        case 2:            
+            b = (1 - stepDist) * (bMax - bMin) + bMin;
+            g = (stepDist) * (gMax - gMin) + gMin;
+            break;
+    }
+    
+    return getHexColorFromRgb(r | 0, g | 0, b | 0);
 }
 
 function getColor(x, y) {
-    if (gradientColor){
-        return getDistanceColor(x, SCREEN_WIDTH, y, SCREEN_HEIGHT);
-    }
-    else {
-        return gerRandomColor();
+    switch (mode){
+        case modes.GRADIENT:
+            return getGradientColor(x, SCREEN_WIDTH, y, SCREEN_HEIGHT);
+        case modes.RANDOM:
+            return gerRandomColor();
+        case modes.CIRCLES:
+            return getColorForCircle(x, SCREEN_WIDTH, y, SCREEN_HEIGHT);
     }
 }
 
@@ -182,13 +328,13 @@ function updatePointColor(point){
 function createBorderPoints(pointsOnSide){
     let newBorderPoints = [];
     for(let i = 0; i < pointsOnSide; i++){
-        var x = (SCREEN_WIDTH / (pointsOnSide - 1)) * i;
+        let x = (SCREEN_WIDTH / (pointsOnSide - 1)) * i;
         newBorderPoints.push(createNewPointByCoords(x, 0, getColor(x, 0)));
         newBorderPoints.push(createNewPointByCoords(x, SCREEN_HEIGHT, getColor(x, SCREEN_HEIGHT)));
     }
     
     for(let i = 1; i < (pointsOnSide - 1); i++){
-        var y = (SCREEN_HEIGHT / (pointsOnSide - 1)) * i;
+        let y = (SCREEN_HEIGHT / (pointsOnSide - 1)) * i;
         newBorderPoints.push(createNewPointByCoords(0, y, getColor(0, y)));
         newBorderPoints.push(createNewPointByCoords(SCREEN_WIDTH, y, getColor(SCREEN_WIDTH, y)));
     }
@@ -197,12 +343,12 @@ function createBorderPoints(pointsOnSide){
 }
 
 function createNewSinglePoint(){
-    var point = createNewRandomPoint();        
+    let point = createNewRandomPoint();        
     points.push(point);
 }
 
 function addNewPoints(){
-    var numberOfNewPoints = points.length * NEW_POINTS_MULT;
+    let numberOfNewPoints = points.length * NEW_POINTS_MULT;
     if (numberOfNewPoints < 1) numberOfNewPoints = 1;
 
     for(let i = 0; i < numberOfNewPoints; i++)
@@ -213,7 +359,10 @@ function addNewPoints(){
 
 function popPoints()
 {
-    var numberOfPoints = points.length * NEW_POINTS_MULT;
+    if (points.length == 1){
+        return;
+    }
+    let numberOfPoints = points.length * NEW_POINTS_MULT;
     if (numberOfPoints < 1) numberOfPoints = 1;
 
     for(let i = 0; i < numberOfPoints; i++)
@@ -224,7 +373,7 @@ function popPoints()
 
 function adjustSpeed(multiplier){
     for (let i = 0, len = points.length; i < len; i++) {
-        var point = points[i];
+        let point = points[i];
         point.speed.dx *= multiplier;
         point.speed.dy *= multiplier;
     }
@@ -232,7 +381,7 @@ function adjustSpeed(multiplier){
 
 function updateAllPointsColor(){
     for (let i = 0, len = points.length; i < len; i++) {
-        var point = points[i];
+        let point = points[i];
         point.color = getColor(point.position.x, point.position.y);
     }
 }
@@ -248,14 +397,16 @@ function loop() {
     updateBorderPoints();
     drawMesh();
     handlePointsFrame();
+
+    handleColorAnimation();
 }
 
 function updateBorderPoints(force = false) {
-    var targetSidePoints = (Math.sqrt(points.length) / 2) | 0;
+    let targetSidePoints = (Math.sqrt(points.length) / 2) | 0;
     if (targetSidePoints < 4){
         targetSidePoints = 4;
     }
-    var numberOfBorderPoints = targetSidePoints * 2 + (targetSidePoints - 2) * 2;
+    let numberOfBorderPoints = targetSidePoints * 2 + (targetSidePoints - 2) * 2;
 
     if (force || numberOfBorderPoints != borderPoints.length) {
         borderPoints = createBorderPoints(targetSidePoints);
@@ -340,7 +491,7 @@ function handlePointsFrame(){
     }
 
     for (let i = 0, len = points.length; i < len; i++) {
-        var point = points[i];
+        let point = points[i];
         
         if (mouseIsDown && !selectedFound) {
             if (isMouseOver(point)){
@@ -378,7 +529,7 @@ function handlePointsFrame(){
         if (drawPoints){
             drawPoint(point);
         }
-        if (gradientColor) {
+        if (mode != modes.RANDOM) {
             updatePointColor(point);
         }
     }
@@ -458,11 +609,6 @@ function keyPressHandler(e){
         case 'KeyP':
             drawPoints = !drawPoints;
             break;
-        case 'KeyC':
-            gradientColor = !gradientColor;
-            updateBorderPoints(true);
-            updateAllPointsColor();
-            break;
         case 'KeyR':
             rMax = rMax == 0 ? 255 : 0;
             updateBorderPoints(true);
@@ -489,6 +635,21 @@ function keyPressHandler(e){
             if (trailIntensity < 0.005){
                 trailIntensity = 0.005;
             }
+            break;            
+        case 'Digit1':
+            mode = modes.GRADIENT;
+            updateBorderPoints(true);
+            updateAllPointsColor();
+            break;            
+        case 'Digit2':
+            mode = modes.RANDOM;
+            updateBorderPoints(true);
+            updateAllPointsColor();
+            break;                    
+        case 'Digit3':
+            mode = modes.CIRCLES;
+            updateBorderPoints(true);
+            updateAllPointsColor();
             break;
         default:
             break;
