@@ -46,7 +46,7 @@ let baseSpeed = 0.5;
 let animate = true;
 let drawTriangles = false;
 let drawEdgeLines = true;
-let drawPoints = true;
+let drawPoints = false;
 let trailIntensity = 0.1;
 let delaunay;
 let delaunayFrameCounter = 0;
