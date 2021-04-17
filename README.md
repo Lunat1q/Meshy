@@ -32,6 +32,6 @@ Small demo of mesh animation in JS
 
 - `A` = toggle animation
 - `{ (Left bracket)` = increase trail time animation
-- `} (Left bracket)` = decrease trail time animation
+- `} (Right bracket)` = decrease trail time animation
 - `+` = increase points speed
 - `-` = decrease points speed
