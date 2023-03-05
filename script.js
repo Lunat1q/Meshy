@@ -10,6 +10,8 @@ let bMax = 255;
 let SCREEN_WIDTH = 900;
 let SCREEN_HEIGHT = 600;
 
+const TARGET_DPS = 30;
+
 const RADIUS = 5;
 
 const RADIUS_SCALE_MIN = 1;
@@ -41,6 +43,7 @@ let mouseDownX;
 let mouseDownY;
 let mouseIsDown = false;
 let selectedFound = false;
+let updateStats = false;
 let selectionColor = 'rgba(255,255,255,1)';
 let baseSpeed = 0.5;
 let animate = true;
@@ -51,6 +54,11 @@ let trailIntensity = 0.1;
 let delaunay;
 let delaunayFrameCounter = 0;
 let mode = modes.GRADIENT;
+
+let fpsFilterStrength = 20;
+let frameTime = 0;
+let lastLoop;
+let thisLoop;
 
 function init(){
     canvas = document.getElementById('main');
@@ -69,14 +77,15 @@ function init(){
         createPoints();      
         initBullets();  
         
-        setInterval( loop, 1000 / 30 );
+        setInterval( loop, 1000 / TARGET_DPS);
     }
+    
+    startFpsUpdate();
 
     updateBorderPoints();
 }
 
 document.oncontextmenu = function (e) {
-    let evt = new Object({ keyCode: 93 });
     stopEvent(e);
     toggleHelp();
 }
@@ -353,6 +362,16 @@ function addNewPoints(){
     {
         createNewSinglePoint();
     }
+    refreshPointsStat();
+}
+
+function refreshPointsStat()
+{
+    var numOfDots = document.getElementById("numberOfDots");
+    if(updateStats)
+    {
+        numOfDots.innerText = points.length;
+    }
 }
 
 function popPoints()
@@ -367,6 +386,7 @@ function popPoints()
     {
         points.pop();
     }
+    refreshPointsStat();
 }
 
 function adjustSpeed(multiplier){
@@ -397,6 +417,30 @@ function loop() {
     handlePointsFrame();
 
     handleColorAnimation();
+    calcFps();
+}
+
+function calcFps()
+{
+    if (updateStats)
+    {
+        var thisFrameTime = (thisLoop=new Date) - lastLoop;
+        frameTime += (thisFrameTime - frameTime) / fpsFilterStrength;
+        lastLoop = thisLoop;
+    }
+}
+
+function startFpsUpdate()
+{
+    var fpsOut = document.getElementById('fps');
+        setInterval(
+            function(){
+                if (updateStats){
+                    fpsOut.innerHTML = (1000/frameTime).toFixed(1);
+                }
+            },
+        3000);
+
 }
 
 function updateBorderPoints(force = false) {
@@ -577,6 +621,22 @@ function windowResizeHandler() {
     borderPoints = createBorderPoints();
 }
 
+function toggleStatsWindow()
+{
+    var x = document.getElementById("stats");
+    if (x.style.display === "none") {
+      x.style.display = "block";
+      updateStats = true;
+      lastLoop  = new Date;
+      thisLoop = null;
+      frameTime = 0;
+      refreshPointsStat();
+    } else {
+      x.style.display = "none";
+      updateStats = false;
+    }
+}
+
 function keyPressHandler(e){
     if(e.keyCode == 32){
         addNewPoints();
@@ -588,6 +648,9 @@ function keyPressHandler(e){
     }
 
     switch (e.code) {
+		case 'KeyS':
+            toggleStatsWindow();
+            break;
         case 'KeyA':
             animate = !animate;
             break;
