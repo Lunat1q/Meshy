@@ -453,7 +453,7 @@ function drawTriangle(idx, points){
 
     if (drawEdgeLines) {
         // the outline
-        context.fillStyle = selected ? selectionColor : point1.color;
+        // context.fillStyle = selected ? selectionColor : point1.color; //not really needed
         context.strokeStyle = selected ? selectionColor : point1.color;
         context.lineWidth = selected ? point1.size / 3 : point1.size / 10;
         context.stroke();
