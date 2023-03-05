@@ -560,6 +560,7 @@ function documentMouseDownHandler(event) {
 
 function documentMouseUpHandler(event) {
     mouseIsDown = false;
+    selectedFound = false;
 }
 
 function windowResizeHandler() {
