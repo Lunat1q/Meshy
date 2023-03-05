@@ -56,7 +56,7 @@ function init(){
     canvas = document.getElementById('main');
 
     if (canvas && canvas.getContext) {
-        context = canvas.getContext('2D', {alpha: false});
+        context = canvas.getContext("2d", {alpha: false});
         
         // Register event listeners
         document.addEventListener('mousemove', documentMouseMoveHandler, false);
