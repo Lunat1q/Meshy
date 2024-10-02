@@ -59,35 +59,82 @@ let fpsFilterStrength = 20;
 let frameTime = 0;
 let lastLoop;
 let thisLoop;
+let isMobileRes = false;
+let intervalId;
 
-function init(){
+function init() {
     canvas = document.getElementById('main');
+    isMobileRes = isMobile();
 
     if (canvas && canvas.getContext) {
-        context = canvas.getContext("2d", {alpha: false});
-        
-        // Register event listeners
-        document.addEventListener('mousemove', documentMouseMoveHandler, false);
-        document.addEventListener('mousedown', documentMouseDownHandler, false);
-        document.addEventListener('mouseup', documentMouseUpHandler, false);
-        window.addEventListener('resize', windowResizeHandler, false);
-        document.addEventListener('keypress', keyPressHandler, false);          
-        
+        context = canvas.getContext("2d", { alpha: false });
+
+        if (!isMobileRes) {
+            // Register event listeners
+            document.addEventListener('mousemove', documentMouseMoveHandler, false);
+            document.addEventListener('mousedown', documentMouseDownHandler, false);
+            document.addEventListener('mouseup', documentMouseUpHandler, false);
+            window.addEventListener('resize', windowResizeHandler, false);
+            document.addEventListener('keypress', keyPressHandler, false);
+        }
+        else {
+            document.addEventListener('touchend', detectDoubleTap(500), { passive: false });
+            document.addEventListener('doubletap', doubleTapHandler);
+        }
         windowResizeHandler();
-        createPoints();      
-        initBullets();  
-        
-        setInterval( loop, 1000 / TARGET_DPS);
+        createPoints();
+        initBullets();
+
+        setInterval(loop, 1000 / TARGET_DPS);
     }
-    
+
+    document.getElementById("help").style.display = !isMobileRes ? "block" : "none";
+    document.getElementById("help-mobile").style.display = isMobileRes ? "block" : "none";
+
     startFpsUpdate();
 
     updateBorderPoints();
 }
 
 document.oncontextmenu = function (e) {
+    if (!isMobile()) {
+        stopEvent(e);
+        toggleHelp();
+    }
+}
+
+function mousedownfunc(func) {
+    intervalId = setInterval(func, 50);
+}
+
+function mouseupfunc() {
+    clearInterval(intervalId);
+}
+
+function doubleTapHandler(e) {
     stopEvent(e);
     toggleHelp();
+}
+
+function detectDoubleTap(doubleTapMs) {
+    let timeout, lastTap = 0
+    return function detectDoubleTap(event) {
+        const currentTime = new Date().getTime()
+        const tapLength = currentTime - lastTap
+        if (0 < tapLength && tapLength < doubleTapMs) {
+            event.preventDefault()
+            const doubleTap = new CustomEvent("doubletap", {
+                bubbles: true,
+                detail: event
+            })
+            event.target.dispatchEvent(doubleTap)
+        }
+        lastTap = currentTime
+    }
+}
+
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 function stopEvent(event) {
@@ -97,67 +144,67 @@ function stopEvent(event) {
         event.stopPropagation();
 }
 
-function initBullets(){
+function initBullets() {
     points = [];
 }
 
 function createPoints() {
     points = [];
-    
+
     for (let i = 0; i < QUANTITY; i++) {
         createNewSinglePoint();
     }
 }
 
-function createNewRandomPoint(){
+function createNewRandomPoint() {
     let x = Math.random() * SCREEN_WIDTH;
     let y = Math.random() * SCREEN_HEIGHT;
     return createNewPointByCoords(
-        x, 
+        x,
         y,
         getColor(x, y)
     );
 }
 
 function toggleHelp() {
-    var x = document.getElementById("help");
+    var x = document.getElementById(isMobileRes ? "help-mobile" : "help");
     if (x.style.display === "none") {
-      x.style.display = "block";
+        x.style.display = "block";
     } else {
-      x.style.display = "none";
+        x.style.display = "none";
     }
 }
 
 function getRandomInZeroOne() { return (-1 + 2 * Math.random()); }
 
-function createNewPointByCoords(x, y, color, size = RADIUS){
-    let pointSpeed = {dx : getRandomInZeroOne() * baseSpeed, dy: getRandomInZeroOne() * baseSpeed};
+function createNewPointByCoords(x, y, color, size = RADIUS) {
+    let pointSpeed = { dx: getRandomInZeroOne() * baseSpeed, dy: getRandomInZeroOne() * baseSpeed };
 
     let point = {
         position: { x: x, y: y },
-        size: size * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),            
+        size: size * (1 + Math.random() * (RADIUS_SCALE_MAX - RADIUS_SCALE_MIN)),
         color: color,
         linesTo: [],
         selected: false,
-        speed: pointSpeed    
+        speed: pointSpeed
     };
     return point;
 }
 
-function toColorHex(digit, len = 2){
+function toColorHex(digit, len = 2) {
     let ret = digit.toString(16);
-    while (ret.length < len){
+    while (ret.length < len) {
         ret = '0' + ret;
     }
     return ret;
 }
 
-function gerRandomColor(){
+function gerRandomColor() {
     let rDist = rMax - rMin;
     let gDist = gMax - gMin;
     let bDist = bMax - bMin;
 
-    if (rDist == 0 && gDist == 0 && bDist == 0){
+    if (rDist == 0 && gDist == 0 && bDist == 0) {
         return FALLBACK_COLOR;
     }
     else {
@@ -168,10 +215,10 @@ function gerRandomColor(){
     }
 }
 
-function getHexColorFromRgb(r, g, b){ return '#' + toColorHex(r) + toColorHex(g) + toColorHex(b); }
+function getHexColorFromRgb(r, g, b) { return '#' + toColorHex(r) + toColorHex(g) + toColorHex(b); }
 
-function getGradientColor(x, xMax, y, yMax){
-    if (rMax == 0 && gMax == 0 && bMax == 0){
+function getGradientColor(x, xMax, y, yMax) {
+    if (rMax == 0 && gMax == 0 && bMax == 0) {
         return FALLBACK_COLOR;
     }
 
@@ -191,79 +238,78 @@ function getGradientColor(x, xMax, y, yMax){
 
 let frameCount = 0;
 function handleColorAnimation() {
-    if (!animate){
+    if (!animate) {
         return;
     }
     frameCount++;
-    switch (mode){
+    switch (mode) {
         case modes.GRADIENT:
             break;
         case modes.RANDOM:
             break;
         case modes.CIRCLES:
-            if (frameCount >= 3){
-                if (circlesUp){
-                    circlesCount+=0.1;
+            if (frameCount >= 3) {
+                if (circlesUp) {
+                    circlesCount += 0.1;
                 }
-                else
-                {
-                    circlesCount-=0.1;
+                else {
+                    circlesCount -= 0.1;
                 }
                 frameCount = 0;
             }
 
             let hitRange = false;
-            if (circlesUp && circlesCount >= 15){
+            if (circlesUp && circlesCount >= 15) {
                 circlesUp = false;
                 hitRange = true;
             }
-            else if (!circlesUp && circlesCount <= 0.5){
+            else if (!circlesUp && circlesCount <= 0.5) {
                 circlesUp = true;
                 hitRange = true;
             }
 
-            if (hitRange){
+            if (hitRange) {
                 centerMoveX = Math.random() > 0.5;
                 centerMoveY = Math.random() > 0.5;
-                if (centerMoveX && Math.random() > 0.8){
+                if (centerMoveX && Math.random() > 0.8) {
                     centerMoveXUp = !centerMoveXUp;
                 }
-                if (centerMoveY && Math.random() > 0.8){
+                if (centerMoveY && Math.random() > 0.8) {
                     centerMoveYUp = !centerMoveYUp;
                 }
             }
             const COLOR_MULT = 1.0004;
 
-            if (centerMoveX){
-                if (centerMoveXUp){ 
+            if (centerMoveX) {
+                if (centerMoveXUp) {
                     centerPositionX *= COLOR_MULT;
                 }
                 else {
                     centerPositionX /= COLOR_MULT;
                 }
-                if (centerPositionX > 20){
+                if (centerPositionX > 20) {
                     centerMoveXUp = false;
                 }
-                else if (centerPositionX < 1.1){
+                else if (centerPositionX < 1.1) {
                     centerMoveXUp = true;
                 }
             }
-            if (centerMoveY){
-                if (centerMoveYUp){ 
+            if (centerMoveY) {
+                if (centerMoveYUp) {
                     cetnerPositionY *= COLOR_MULT;
                 }
                 else {
                     cetnerPositionY /= COLOR_MULT;
                 }
 
-                if (cetnerPositionY > 20){
+                if (cetnerPositionY > 20) {
                     centerMoveYUp = false;
                 }
-                else if (cetnerPositionY < 1.1){
+                else if (cetnerPositionY < 1.1) {
                     centerMoveYUp = true;
                 }
             }
-        
+
             break;
     }
 }
@@ -277,8 +323,8 @@ let centerMoveXUp = false;
 let centerMoveY = false;
 let centerMoveYUp = false;
 
-function getColorForCircle(x, xMax, y, yMax){
-    if (rMax == 0 && gMax == 0 && bMax == 0){
+function getColorForCircle(x, xMax, y, yMax) {
+    if (rMax == 0 && gMax == 0 && bMax == 0) {
         return FALLBACK_COLOR;
     }
 
@@ -299,26 +345,26 @@ function getColorForCircle(x, xMax, y, yMax){
     let r = 0;
     let g = 0;
     let b = 0;
-    switch (step){
+    switch (step) {
         case 0:
             g = (1 - stepDist) * (gMax - gMin) + gMin;
             r = stepDist * (rMax - rMin) + rMin;
             break;
-        case 1:            
+        case 1:
             r = (1 - stepDist) * (rMax - rMin) + rMin;
             b = stepDist * (bMax - bMin) + bMin;
             break;
-        case 2:            
+        case 2:
             b = (1 - stepDist) * (bMax - bMin) + bMin;
             g = (stepDist) * (gMax - gMin) + gMin;
             break;
     }
-    
+
     return getHexColorFromRgb(r | 0, g | 0, b | 0);
 }
 
 function getColor(x, y) {
-    switch (mode){
+    switch (mode) {
         case modes.GRADIENT:
             return getGradientColor(x, SCREEN_WIDTH, y, SCREEN_HEIGHT);
         case modes.RANDOM:
@@ -328,19 +374,19 @@ function getColor(x, y) {
     }
 }
 
-function updatePointColor(point){
+function updatePointColor(point) {
     point.color = getColor(point.position.x, point.position.y);
 }
 
-function createBorderPoints(pointsOnSide){
+function createBorderPoints(pointsOnSide) {
     let newBorderPoints = [];
-    for(let i = 0; i < pointsOnSide; i++){
+    for (let i = 0; i < pointsOnSide; i++) {
         let x = (SCREEN_WIDTH / (pointsOnSide - 1)) * i;
         newBorderPoints.push(createNewPointByCoords(x, 0, getColor(x, 0)));
         newBorderPoints.push(createNewPointByCoords(x, SCREEN_HEIGHT, getColor(x, SCREEN_HEIGHT)));
     }
-    
-    for(let i = 1; i < (pointsOnSide - 1); i++){
+
+    for (let i = 1; i < (pointsOnSide - 1); i++) {
         let y = (SCREEN_HEIGHT / (pointsOnSide - 1)) * i;
         newBorderPoints.push(createNewPointByCoords(0, y, getColor(0, y)));
         newBorderPoints.push(createNewPointByCoords(SCREEN_WIDTH, y, getColor(SCREEN_WIDTH, y)));
@@ -349,47 +395,42 @@ function createBorderPoints(pointsOnSide){
     return newBorderPoints;
 }
 
-function createNewSinglePoint(){
-    let point = createNewRandomPoint();        
+function createNewSinglePoint() {
+    let point = createNewRandomPoint();
     points.push(point);
 }
 
-function addNewPoints(){
+function addNewPoints() {
     let numberOfNewPoints = points.length * NEW_POINTS_MULT;
     if (numberOfNewPoints < 1) numberOfNewPoints = 1;
 
-    for(let i = 0; i < numberOfNewPoints; i++)
-    {
+    for (let i = 0; i < numberOfNewPoints; i++) {
         createNewSinglePoint();
     }
     refreshPointsStat();
 }
 
-function refreshPointsStat()
-{
+function refreshPointsStat() {
     var numOfDots = document.getElementById("numberOfDots");
-    if(updateStats)
-    {
+    if (updateStats) {
         numOfDots.innerText = points.length;
     }
 }
 
-function popPoints()
-{
-    if (points.length == 1){
+function popPoints() {
+    if (points.length == 1) {
         return;
     }
     let numberOfPoints = points.length * NEW_POINTS_MULT;
     if (numberOfPoints < 1) numberOfPoints = 1;
 
-    for(let i = 0; i < numberOfPoints; i++)
-    {
+    for (let i = 0; i < numberOfPoints; i++) {
         points.pop();
     }
     refreshPointsStat();
 }
 
-function adjustSpeed(multiplier){
+function adjustSpeed(multiplier) {
     for (let i = 0, len = points.length; i < len; i++) {
         let point = points[i];
         point.speed.dx *= multiplier;
@@ -397,15 +438,15 @@ function adjustSpeed(multiplier){
     }
 }
 
-function updateAllPointsColor(){
+function updateAllPointsColor() {
     for (let i = 0, len = points.length; i < len; i++) {
         let point = points[i];
         point.color = getColor(point.position.x, point.position.y);
     }
 }
 
-function getDistance(x0, x1, y0, y1, r){
-    return Math.sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+function getDistance(x0, x1, y0, y1, r) {
+    return Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
 }
 
 function loop() {
@@ -420,32 +461,29 @@ function loop() {
     calcFps();
 }
 
-function calcFps()
-{
-    if (updateStats)
-    {
-        var thisFrameTime = (thisLoop=new Date) - lastLoop;
+function calcFps() {
+    if (updateStats) {
+        var thisFrameTime = (thisLoop = new Date) - lastLoop;
         frameTime += (thisFrameTime - frameTime) / fpsFilterStrength;
         lastLoop = thisLoop;
     }
 }
 
-function startFpsUpdate()
-{
+function startFpsUpdate() {
     var fpsOut = document.getElementById('fps');
-        setInterval(
-            function(){
-                if (updateStats){
-                    fpsOut.innerHTML = (1000/frameTime).toFixed(1);
-                }
-            },
+    setInterval(
+        function () {
+            if (updateStats) {
+                fpsOut.innerHTML = (1000 / frameTime).toFixed(1);
+            }
+        },
         3000);
 
 }
 
 function updateBorderPoints(force = false) {
     let targetSidePoints = (Math.sqrt(points.length) / 2) | 0;
-    if (targetSidePoints < 4){
+    if (targetSidePoints < 4) {
         targetSidePoints = 4;
     }
     let numberOfBorderPoints = targetSidePoints * 2 + (targetSidePoints - 2) * 2;
@@ -459,20 +497,20 @@ function nextHalfedge(e) { return (e % 3 === 2) ? e - 2 : e + 1; }
 function prevHalfedge(e) { return (e % 3 === 0) ? e + 2 : e - 1; }
 
 function edgesOfTriangle(t) { return [3 * t, 3 * t + 1, 3 * t + 2]; }
-function triangleOfEdge(e)  { return Math.floor(e / 3); }
+function triangleOfEdge(e) { return Math.floor(e / 3); }
 
 function pointsOfTriangle(delaunay, t) {
     return edgesOfTriangle(t)
         .map(e => delaunay.triangles[e]);
 }
 
-function drawMesh(){
+function drawMesh() {
     let allPoints = borderPoints.concat(points);
-    
-    if (delaunayFrameCounter++ == 0){
+
+    if (delaunayFrameCounter++ == 0) {
         delaunay = Delaunator.from(allPoints);
     }
-    if (delaunayFrameCounter >= FRAMES_TO_RECALC){
+    if (delaunayFrameCounter >= FRAMES_TO_RECALC) {
         delaunayFrameCounter = 0;
     }
 
@@ -481,7 +519,7 @@ function drawMesh(){
     }
 }
 
-function drawTriangle(idx, points){
+function drawTriangle(idx, points) {
     point1 = points[0];
     point2 = points[1];
     point3 = points[2];
@@ -510,48 +548,47 @@ function drawTriangle(idx, points){
     }
 }
 
-function isMouseOver(point){
+function isMouseOver(point) {
     return getDistance(point.position.x, mouseDownX, point.position.y, mouseDownY) < point.size
 }
 
-function animatePoint(point){
+function animatePoint(point) {
     point.position.x += point.speed.dx;
     point.position.y += point.speed.dy;
 
-    if (point.position.x < 0 || point.position.x > SCREEN_WIDTH){
+    if (point.position.x < 0 || point.position.x > SCREEN_WIDTH) {
         point.speed.dx *= -1;
     }
-    if (point.position.y < 0 || point.position.y > SCREEN_HEIGHT){
+    if (point.position.y < 0 || point.position.y > SCREEN_HEIGHT) {
         point.speed.dy *= -1;
     }
 }
 
-function handlePointsFrame(){
+function handlePointsFrame() {
 
-    if (points.length == 0){
+    if (points.length == 0) {
         createPoints();
     }
 
     for (let i = 0, len = points.length; i < len; i++) {
         let point = points[i];
-        
+
         if (mouseIsDown && !selectedFound) {
-            if (isMouseOver(point)){
+            if (isMouseOver(point)) {
                 point.selected = true;
                 selectedFound = true;
             }
         }
-        else if(!mouseIsDown && point.selected){
+        else if (!mouseIsDown && point.selected) {
             point.selected = false;
             selectedFound = false;
         }
 
-        if (point.selected){
+        if (point.selected) {
             point.position.x = mouseX;
             point.position.y = mouseY;
         }
-        else if (animate)
-        {
+        else if (animate) {
             animatePoint(point);
         }
 
@@ -568,7 +605,7 @@ function handlePointsFrame(){
             point.position.y = SCREEN_HEIGHT;
         }
 
-        if (drawPoints){
+        if (drawPoints) {
             drawPoint(point);
         }
         if (mode != modes.RANDOM) {
@@ -577,7 +614,7 @@ function handlePointsFrame(){
     }
 }
 
-function drawPoint(point){        
+function drawPoint(point) {
     context.beginPath();
     context.fillStyle = point.selected ? selectionColor : point.color;
     context.strokeStyle = point.selected ? selectionColor : point.color;
@@ -610,108 +647,164 @@ function documentMouseUpHandler(event) {
 function windowResizeHandler() {
     SCREEN_WIDTH = window.innerWidth;
     SCREEN_HEIGHT = window.innerHeight;
-    
+
     canvas.width = SCREEN_WIDTH;
     canvas.height = SCREEN_HEIGHT;
-    
+
     canvas.style.position = 'absolute';
     canvas.style.left = (window.innerWidth - SCREEN_WIDTH) * .5 + 'px';
     canvas.style.top = (window.innerHeight - SCREEN_HEIGHT) * .5 + 'px';
-    
+
     borderPoints = createBorderPoints();
 }
 
-function toggleStatsWindow()
-{
+function toggleStatsWindow() {
     var x = document.getElementById("stats");
     if (x.style.display === "none") {
-      x.style.display = "block";
-      updateStats = true;
-      lastLoop  = new Date;
-      thisLoop = null;
-      frameTime = 0;
-      refreshPointsStat();
+        x.style.display = "block";
+        updateStats = true;
+        lastLoop = new Date;
+        thisLoop = null;
+        frameTime = 0;
+        refreshPointsStat();
     } else {
-      x.style.display = "none";
-      updateStats = false;
+        x.style.display = "none";
+        updateStats = false;
     }
 }
 
-function keyPressHandler(e){
-    if(e.keyCode == 32){
+function toggleLines() {
+    drawEdgeLines = !drawEdgeLines;
+}
+
+function toggleTriangles() {
+    drawTriangles = !drawTriangles;
+}
+
+function togglePoints() {
+    drawPoints = !drawPoints;
+}
+
+function toggleRed() {
+    rMax = rMax == 0 ? 255 : 0;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleGreen() {
+    gMax = gMax == 0 ? 255 : 0;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleBlue() {
+    bMax = bMax == 0 ? 255 : 0;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleGradientMode() {
+    mode = modes.GRADIENT;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleRandomMode() {
+    mode = modes.RANDOM;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleCirclesMode() {
+    mode = modes.CIRCLES;
+    updateBorderPoints(true);
+    updateAllPointsColor();
+}
+
+function toggleAnimation() {
+    animate = !animate;
+}
+
+function increaseSpeed() {
+    baseSpeed *= 1.1;
+    adjustSpeed(1.1);
+}
+
+function decreaseSpeed() {
+    baseSpeed *= 1 / 1.1;
+    adjustSpeed(1 / 1.1);
+}
+
+function increaseTrail() {
+    trailIntensity *= 1.1;
+    if (trailIntensity > 1) {
+        trailIntensity = 1;
+    }
+}
+
+function decreaseTrail() {
+    trailIntensity *= 1 / 1.1;
+    if (trailIntensity < 0.005) {
+        trailIntensity = 0.005;
+    }
+}
+
+
+function keyPressHandler(e) {
+    if (e.keyCode == 32) {
         addNewPoints();
         return;
     }
-    else if (e.keyCode == 13){
+    else if (e.keyCode == 13) {
         popPoints();
         return;
     }
 
     switch (e.code) {
-		case 'KeyS':
+        case 'KeyS':
             toggleStatsWindow();
             break;
         case 'KeyA':
-            animate = !animate;
+            toggleAnimation();
             break;
         case 'Equal':
-            baseSpeed *= 1.1;
-            adjustSpeed(1.1);
+            increaseSpeed();
             break;
         case 'Minus':
-            baseSpeed *= 1 / 1.1;
-            adjustSpeed(1 / 1.1);
+            decreaseSpeed();
             break;
         case 'KeyT':
-            drawTriangles = !drawTriangles;
+            toggleTriangles();
             break;
         case 'KeyL':
-            drawEdgeLines = !drawEdgeLines;
+            toggleLines();
             break;
         case 'KeyP':
-            drawPoints = !drawPoints;
+            togglePoints();
             break;
         case 'KeyR':
-            rMax = rMax == 0 ? 255 : 0;
-            updateBorderPoints(true);
-            updateAllPointsColor();
+            toggleRed();
             break;
         case 'KeyG':
-            gMax = gMax == 0 ? 255 : 0;
-            updateBorderPoints(true);
-            updateAllPointsColor();
+            toggleGreen();
             break;
         case 'KeyB':
-            bMax = bMax == 0 ? 255 : 0;
-            updateBorderPoints(true);
-            updateAllPointsColor();
+            toggleBlue();
             break;
         case 'BracketRight':
-            trailIntensity *= 1.1;
-            if (trailIntensity > 1){
-                trailIntensity = 1;
-            }
+            decreaseTrail();
             break;
         case 'BracketLeft':
-            trailIntensity *= 1 / 1.1;
-            if (trailIntensity < 0.005){
-                trailIntensity = 0.005;
-            }
-            break;            
+            increaseTrail();
+            break;
         case 'Digit1':
-            mode = modes.GRADIENT;
-            updateBorderPoints(true);
-            updateAllPointsColor();
-            break;            
+            toggleGradientMode();
+            break;
         case 'Digit2':
-            mode = modes.RANDOM;
-            updateBorderPoints(true);
-            updateAllPointsColor();
-            break;                    
+            toggleRandomMode();
+            break;
         case 'Digit3':
-            mode = modes.CIRCLES;
-            updateBorderPoints(true);
-            updateAllPointsColor();
+            toggleCirclesMode();
             break;
         default:
             break;

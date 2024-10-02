@@ -8,6 +8,13 @@
             background-color: powderblue;
             padding: 0px 5px;
         }
+
+        .mobile-action-button {
+            margin: 5px;
+            background-color: powderblue;
+            padding: 5px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 
@@ -41,9 +48,9 @@
                 </ul>
                 <h4>Color</h4>
                 <ul>
-                    <li><code>R</code> = toggle red chanel</li>
-                    <li><code>G</code> = toggle green chanel</li>
-                    <li><code>B</code> = toggle blue chanel</li>
+                    <li><code>R</code> = toggle red channel</li>
+                    <li><code>G</code> = toggle green channel</li>
+                    <li><code>B</code> = toggle blue channel</li>
                 </ul>
                 <h4>Color modes</h4>
                 <ul>
@@ -58,6 +65,47 @@
                     <li><code>}</code> (Right bracket) = decrease trail time animation</li>
                     <li><code>+</code> = increase points speed</li>
                     <li><code>-</code> = decrease points speed</li>
+                </ul>
+            </article>
+        </div>
+        <div id="help-mobile"
+            style="background-color: rgba(255, 250, 250, 0.9); color:slategray; z-index: 9999999; position:absolute; border-radius: 5px;">
+            <article style="padding:10px;">
+                <span style="font-style: italic; text-align: right; font-size:12px; float:right;">Double-tap to hide this</span>
+                <h3>
+                    <center>Mobile Hotkeys help</center>
+                </h3>
+                <h4>General</h4>
+                <ul>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(addNewPoints)" ontouchend="mouseupfunc()">Add new point</button></li>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(popPoints)" ontouchend="mouseupfunc()">Pop point</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleStatsWindow()">Show stats</button></li>
+                </ul>
+                <h4>Rendering settings</h4>
+                <ul>
+                    <li><button class="mobile-action-button" onclick="toggleLines()">Toggle lines</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleTriangles()">Toggle triangles</button></li>
+                    <li><button class="mobile-action-button" onclick="togglePoints()">Toggle points</button></li>
+                </ul>
+                <h4>Color</h4>
+                <ul>
+                    <li><button class="mobile-action-button" onclick="toggleRed()">Toggle red channel</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleGreen()">Toggle green channel</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleBlue()">Toggle blue channel</button></li>
+                </ul>
+                <h4>Color modes</h4>
+                <ul>
+                    <li><button class="mobile-action-button" onclick="toggleGradientMode()">Gradient colors</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleRandomMode()">Random colors</button></li>
+                    <li><button class="mobile-action-button" onclick="toggleCirclesMode()">Gradient animated circles</button></li>
+                </ul>
+                <h4>Animation:</h4>
+                <ul>
+                    <li><button class="mobile-action-button" onclick="toggleAnimation()">Toggle animation</button></li>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(decreaseTrail)" ontouchend="mouseupTrail()">Increase points trail</button></li>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(increaseTrail)" ontouchend="mouseupTrail()">Decrease points trail</button></li>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(increaseSpeed)" ontouchend="mouseupfunc()">Increase points speed</button></li>
+                    <li><button class="mobile-action-button" ontouchstart="mousedownfunc(decreaseSpeed)" ontouchend="mouseupfunc()">Decrease points speed</button></li>
                 </ul>
             </article>
         </div>
