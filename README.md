@@ -1,4 +1,9 @@
 # Meshy
+
+> **Archived:** Meshy has been merged into [Screensavers](https://github.com/Lunat1q/Screensavers) as the **Mesh** mode.
+> Try it at [screen.maxpodolski.com/?type=mesh&color=%23ffffff](https://screen.maxpodolski.com/?type=mesh&color=%23ffffff). All hotkeys below still work there (right-click or `H` for help).
+> This repo is kept read-only for history.
+
 Small demo of mesh animation in JS
 
 ## [Demo](https://lunat1q.github.io/Meshy/)
